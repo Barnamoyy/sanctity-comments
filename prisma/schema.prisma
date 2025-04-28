@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  imageUrl      String
+  creatorUserId String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  notifications Notification[]
+}
+
+model Thread {
+  id            String    @id @default(uuid())
+  creatorUserId String
+  createdAt     DateTime  @default(now())
+  comments      Comment[]
+
+  @@index([creatorUserId])
+}
+
+model Comment {
+  id              String         @id @default(uuid())
+  threadId        String
+  userId          String
+  parentCommentId String?
+  content         String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  parentComment   Comment?       @relation("CommentToReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[]      @relation("CommentToReplies")
+  thread          Thread         @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  notifications   Notification[]
+
+  @@index([threadId])
+  @@index([userId])
+  @@index([parentCommentId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  commentId String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  comment   Comment  @relation(fields: [commentId], references: [id])
+}
